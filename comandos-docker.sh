@@ -2,90 +2,92 @@ Comandos Docker
 
 "Uma imagem é um conjunto de camadas empilhadas para formar determinada regra de execução de um container."
 
-/*Rodar um container sem travar o terminal passando a flag -d*/
+# Rodar um container sem travar o terminal passando a flag -d
 docker run -d <ImageName>
 
-/*Listando os containers que estão rodando*/
+# Listando os containers que estão rodando
 docker ps
 
-/*Verificando o tamanho do container*/
+# Verificando o tamanho do container
 docker ps -s
 Se incluírmos o a junto ao -s, ficando -sa, serão exibidos também os containers parados
 
-/*Pausando um container*/
+# Pausando um container
 docker pause <containerID>
 
-/*Despausando um container pausado*/
+# Despausando um container pausado
 docker unpause <containerID>
 
-/*Parando de rodar o container*/
+# Parando de rodar o container
 docker stop <containerID>
 
-/*Dando start em um container parado*/
+# Dando start em um container parado
 docker start <containerID>
 
-/*Colocando um container para dormir*/
+# Colocando um container para dormir
 docker run <imageName> sleep 1d
 
-/*lista as imagens já existentes no sistema*/
+# lista as imagens já existentes no sistema
 docker images
 
-/*Exibe as camadas da imagem*/
+# Exibe as camadas da imagem
 docker history <containerID | imageName>
 
-/*Inspeciona a imagem trazendo diversas informações*/
+# Inspeciona a imagem trazendo diversas informações
 docker inspect <containerID>
 
-/*Para executar algum comando no terminal bash do container*/
+# Para executar algum comando no terminal bash do container
 docker exec -it <containerID> bash
 
-/*Executa imagem em modo de interação com o bash*/
+# Executa imagem em modo de interação com o bash
 docker run -it <ImageName> bash
 EX: docker run -it ubuntu bash
 
-/*Mapeando porta automaticamente com a flag -P*/
+# Mapeando porta automaticamente com a flag -P
 docker run -d -P <ImageName>
 => Esse mapeamento é automático, para visualizar a porta mapeada use o comando:
 	docker port <containerID>
 	Ex: Se o resultado contiver 80/tcp -> :::49154 a porta a ser utilizada é 49154
 		=> http://localhost:49154
 
-/*Forçando remoção do container, dessa forma o container é parado e removido*/
+# Forçando remoção do container, dessa forma o container é parado e removido
 docker rm <containerID> --force
 
-/*Mapeando porta manualmente com a flag -p*/
+# Mapeando porta manualmente com a flag -p
 docker run -d -p 8080:80 <imageName>
 => dessa forma estou dizendo que minha porta 8080 deve refletir a porta 80 do container, ficando assim:
 	=> http://localhost:8080
 
 
-/*Gerando imagem a partir de um Dockerfile*/
+# Gerando imagem a partir de um Dockerfile
 docker build -t brunosantos/app-node:1.0
 => Este arquivo Dockerfile deve estar dentro da pasta raíz do projeto a ser buildado e o comando 
 executado nesta mesma pasta.
 
-/*Parando todos os containers de maneira segura*/
-docker stop $(docker container ls -q)
-
-/*Fazendo build de uma imagem de acordo com configs no Dockerfile*/
+# Fazendo build de uma imagem de acordo com configs no Dockerfile
 docker build -t brunosantos/app-node:1.0 .
 
-/*Tagueando a imagem para subir ao Docker Hub no caso de o usuário ser diferente da imagem local*/
+# Tagueando a imagem para subir ao Docker Hub no caso de o usuário ser diferente da imagem local
 docker tag brunosantos/app-node:1.0 brunosansp/app-node:1.0
 
-/*Subindo imagem para o Docker Hub*/
+# Subindo imagem para o Docker Hub
 docker login -u <user> //primeiro fazer login, será solicitada senha no terminal
 docker push brunosansp/app-node:1.0
 
-/*Removendo todos os containers*/
-docker container rm $(docker container ls -aq)
-Se necessário podemos usar acrescentar o --force no final do comando
+# Parando todos os containers de maneira segura
+docker stop $(docker container ls -q)
 
-/*Removendo imagens*/
+# Removendo todos os containers
+docker container rm $(docker container ls -aq)
+
+	Se necessário podemos acrescentar o --force no final do comando
+	docker container rm $(docker ps -aq) --force
+
+# Removendo imagens
 docker rmi $(docker image ls -aq)
 Se necessário podemos usar acrescentar o --force no final do comando
 
-/*Persistência de dados*/
+# Persistência de dados
 Bind mounts(--mount) => Com bind mounts, é possível escrever os dados em uma camada persistente baseado na estrutura de pastas do host.
 Volumes(-v) => Com volumes, é possível escrever os dados em uma camada persistente.
 
@@ -110,3 +112,29 @@ Volumes(-v) => Com volumes, é possível escrever os dados em uma camada persist
 	docker run -it --tmpfs=/app ubuntu bash
 	ou
 	docker run -it --mount type=tmpfs,destination=/app ubuntu bash
+
+
+# Rede
+Com algum container rodando podemos verificar suas configurações de rede e fazer conexões entre containers:
+
+	# verificar o CONTAINER ID, IMAGE, STATUS etc...
+	docker ps
+
+	# inspecionar as configurações de rede
+	docker inspect <containerID>
+
+	# Criar uma rede e garantir IP fixo no container
+	docker network create --driver bridge <nome-rede>
+		# Vamos testar:
+		# Criando a rede
+		docker network create --driver bridge minha-bridge
+		# Criando o container com um nome específico
+		docker run -it --name ubuntu1 --network minha-bridge ubuntu bash
+		#  Criando outro container só que sem terminal e com sleep de 1d
+		docker run -d --name pong --network minha-bridge ubuntu sleep 1d
+		# No container que criamos com terminal atualize o instale o iputils-ping
+		apt-get update && apt-get install iputils-ping -y
+		# Após a instalação faça o teste:
+		ping pong
+			# ping é o comando do iputils e pong o nome do container
+		
